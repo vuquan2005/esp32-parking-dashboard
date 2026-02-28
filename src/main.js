@@ -91,11 +91,115 @@ if (import.meta.env.DEV) {
 
     // Seed history records
     const mockHistory = [
-        { uid: '12:34:56:78', action: Action.IN, slot: 'B1', status: TxStatus.PROCESSING },
-        { uid: '99:88:77:66', action: Action.IN, slot: 'C2', status: TxStatus.SUCCESS },
-        { uid: 'AA:BB:CC:DD', action: Action.OUT, slot: 'B2', status: TxStatus.SUCCESS },
-        { uid: 'EE:FF:00:11', action: Action.IN, slot: '-', status: TxStatus.ERROR },
-        { uid: 'A3:B4:C5:D6', action: Action.IN, slot: 'A1', status: TxStatus.SUCCESS },
+        {
+            uid: '12:34:56:78',
+            action: Action.IN,
+            slot: 'B1',
+            status: TxStatus.PROCESSING,
+            time: '08:01:12',
+        },
+        {
+            uid: '12:34:56:78',
+            action: Action.IN,
+            slot: 'B1',
+            status: TxStatus.SUCCESS,
+            time: '08:01:15',
+        },
+
+        {
+            uid: '99:88:77:66',
+            action: Action.IN,
+            slot: 'C2',
+            status: TxStatus.SUCCESS,
+            time: '08:03:44',
+        },
+
+        {
+            uid: 'AA:BB:CC:DD',
+            action: Action.OUT,
+            slot: 'B2',
+            status: TxStatus.SUCCESS,
+            time: '08:05:02',
+        },
+
+        {
+            uid: 'EE:FF:00:11',
+            action: Action.IN,
+            slot: '-',
+            status: TxStatus.ERROR,
+            time: '08:06:11',
+        },
+
+        {
+            uid: 'A3:B4:C5:D6',
+            action: Action.IN,
+            slot: 'A1',
+            status: TxStatus.SUCCESS,
+            time: '08:10:33',
+        },
+
+        {
+            uid: '99:88:77:66',
+            action: Action.OUT,
+            slot: 'C2',
+            status: TxStatus.SUCCESS,
+            time: '08:25:09',
+        },
+
+        {
+            uid: '12:34:56:78',
+            action: Action.OUT,
+            slot: 'B1',
+            status: TxStatus.SUCCESS,
+            time: '08:30:17',
+        },
+
+        {
+            uid: 'EE:FF:00:11',
+            action: Action.IN,
+            slot: 'D3',
+            status: TxStatus.PROCESSING,
+            time: '08:31:02',
+        },
+        {
+            uid: 'EE:FF:00:11',
+            action: Action.IN,
+            slot: 'D3',
+            status: TxStatus.SUCCESS,
+            time: '08:31:06',
+        },
+
+        {
+            uid: 'F1:E2:D3:C4',
+            action: Action.IN,
+            slot: 'A3',
+            status: TxStatus.SUCCESS,
+            time: '08:35:41',
+        },
+
+        {
+            uid: 'A3:B4:C5:D6',
+            action: Action.OUT,
+            slot: 'A1',
+            status: TxStatus.SUCCESS,
+            time: '09:02:55',
+        },
+
+        {
+            uid: '77:66:55:44',
+            action: Action.IN,
+            slot: '-',
+            status: TxStatus.ERROR,
+            time: '09:05:18',
+        },
+
+        {
+            uid: 'F1:E2:D3:C4',
+            action: Action.OUT,
+            slot: 'A3',
+            status: TxStatus.SUCCESS,
+            time: '09:20:07',
+        },
     ];
 
     for (const rec of mockHistory) {
