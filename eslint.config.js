@@ -14,6 +14,13 @@ export default [
                 console: 'readonly',
                 module: 'readonly',
                 process: 'readonly',
+                fetch: 'readonly',
+                WebSocket: 'readonly',
+                location: 'readonly',
+                setTimeout: 'readonly',
+                setInterval: 'readonly',
+                clearInterval: 'readonly',
+                requestAnimationFrame: 'readonly',
             },
         },
         rules: {

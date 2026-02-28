@@ -1,14 +1,50 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#1e1e1e" />
+    <meta name="description" content="ESP32 Smart Parking Dashboard – Real-time 3x3 parking lot monitoring" />
     <title>Parking Dashboard</title>
   </head>
 
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <!-- Header -->
+      <div class="header">
+        <h2>Dashboard Quản Lý Bãi Xe</h2>
+        <div class="stats-container" id="stats-container"></div>
+      </div>
+
+      <!-- Main layout -->
+      <div class="main-layout">
+        <!-- Grid panel -->
+        <div class="panel">
+          <h3 class="panel-title">Sơ đồ bãi xe trực tiếp</h3>
+          <div class="parking-grid" id="parking-grid"></div>
+        </div>
+
+        <!-- History panel -->
+        <div class="panel">
+          <h3 class="panel-title">Lịch sử quẹt thẻ</h3>
+          <div class="table-container">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>Thời gian</th>
+                  <th>UID Thẻ RFID</th>
+                  <th>Hành động</th>
+                  <th>Vị trí</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="history-log"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
