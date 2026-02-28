@@ -44,14 +44,13 @@ function render() {
         }
         cell.appendChild(el('div', { class: 'slot-info', text: info }));
 
-        // Click → toggle slot filter
         cell.addEventListener('click', () => {
             const current = getState('filters');
             eventBus.emit(
                 'filter:change',
                 current.slot === slot.name
                     ? { ...current, slot: null }
-                    : { ...current, slot: slot.name }
+                    : { ...current, slot: slot.name, status: null }
             );
         });
 

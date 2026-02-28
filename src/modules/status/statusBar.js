@@ -73,19 +73,22 @@ function render() {
         }
         box.appendChild(valueEl);
 
-        // Click → toggle status filter (skip "total")
-        if (item.filterKey) {
-            box.style.cursor = 'pointer';
-            box.addEventListener('click', () => {
-                const current = getState('filters');
+        box.style.cursor = 'pointer';
+
+        box.addEventListener('click', () => {
+            const current = getState('filters');
+
+            if (item.filterKey === null) {
+                eventBus.emit('filter:change', { ...current, status: null, slot: null });
+            } else {
                 eventBus.emit(
                     'filter:change',
                     current.status === item.filterKey
                         ? { ...current, status: null }
-                        : { ...current, status: item.filterKey }
+                        : { ...current, status: item.filterKey, slot: null }
                 );
-            });
-        }
+            }
+        });
 
         container.appendChild(box);
     }
