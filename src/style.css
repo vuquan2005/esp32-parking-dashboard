@@ -286,6 +286,8 @@ body {
   font-size: 12px;
   font-weight: bold;
   display: inline-block;
+  min-width: 120px;
+  text-align: center;
 }
 
 .status.success {
@@ -327,8 +329,7 @@ body {
   border: 1px solid #f39c12;
   background-color: transparent;
   z-index: 1;
-  min-width: 100px;
-  text-align: center;
+  font-variant-numeric: tabular-nums;
   transition:
     --progress var(--duration, 0ms) ease-out,
     --progress-num var(--duration, 0ms) ease-out;
