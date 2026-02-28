@@ -10,9 +10,9 @@ export function updateSlot(name, data) {
     const slot = slots.get(name);
     if (!slot) return;
 
-    Object.assign(slot, data);
-    // Trigger reactivity by notifying subscribers
-    setState({ slots });
+    const newSlots = new Map(slots);
+    newSlots.set(name, { ...slot, ...data });
+    setState({ slots: newSlots });
 }
 
 /**
@@ -21,21 +21,12 @@ export function updateSlot(name, data) {
  */
 export function setAllSlots(list) {
     const slots = getState('slots');
+    const newSlots = new Map(slots);
     for (const item of list) {
-        const slot = slots.get(item.name);
+        const slot = newSlots.get(item.name);
         if (slot) {
-            slot.status = item.status;
-            slot.uid = item.uid ?? null;
+            newSlots.set(item.name, { ...slot, status: item.status, uid: item.uid ?? null });
         }
     }
-    setState({ slots });
-}
-
-/**
- * Get slots filtered by status.
- * @param {string} status
- * @returns {Array}
- */
-export function getSlotsByStatus(status) {
-    return [...getState('slots').values()].filter((s) => s.status === status);
+    setState({ slots: newSlots });
 }

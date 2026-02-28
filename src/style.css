@@ -290,6 +290,18 @@ body {
   border: 1px solid #e74c3c;
 }
 
+@property --progress {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 0%;
+}
+
+@property --progress-num {
+  syntax: '<integer>';
+  inherits: true;
+  initial-value: 0;
+}
+
 /* ── Progress bar inside status chip ────────────────────── */
 
 .status.processing.progress-bg {
@@ -301,6 +313,9 @@ body {
   z-index: 1;
   min-width: 120px;
   text-align: center;
+  transition:
+    --progress var(--duration, 0ms) linear,
+    --progress-num var(--duration, 0ms) linear;
 }
 
 .status.processing.progress-bg::before {
@@ -309,8 +324,12 @@ body {
   top: 0;
   left: 0;
   bottom: 0;
-  width: var(--progress);
+  width: var(--progress, 0%);
   background-color: #fef5e7;
   z-index: -1;
-  transition: width 0.5s linear;
+}
+
+.status.processing.progress-bg .percent-text::after {
+  counter-reset: my-progress var(--progress-num);
+  content: counter(my-progress) '%';
 }

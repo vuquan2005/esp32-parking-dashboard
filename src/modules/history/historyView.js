@@ -1,6 +1,6 @@
 import { getState, subscribe } from '../../core/store.js';
 import { TxStatus, ACTION_LABELS, TX_STATUS_LABELS } from '../../utils/constants.js';
-import { el, qs } from '../../utils/helpers.js';
+import { el } from '../../utils/helpers.js';
 
 /** @type {HTMLElement} */
 let tbody;
@@ -90,7 +90,9 @@ function buildStatusCell(rec) {
             attrs: { id: `task-${rec.id}` },
         });
         span.style.setProperty('--progress', `${rec.progress ?? 0}%`);
-        span.innerHTML = `${TX_STATUS_LABELS[TxStatus.PROCESSING]} <span class="percent-text">${rec.progress ?? 0}%</span>`;
+        span.style.setProperty('--progress-num', Math.floor(rec.progress ?? 0));
+        span.textContent = TX_STATUS_LABELS[TxStatus.PROCESSING] + ' ';
+        span.appendChild(el('span', { class: 'percent-text' }));
         return span;
     }
 
@@ -107,43 +109,27 @@ function buildStatusCell(rec) {
     });
 }
 
-/**
- * Animate progress for a specific record.
- * @param {string} recordId
- * @param {number} targetPercent
- * @param {number} durationMs
- */
 export function animateProgress(recordId, targetPercent, durationMs) {
-    const elId = `task-${recordId}`;
-    const statusEl = document.getElementById(elId);
-    if (!statusEl) return;
+    return new Promise((resolve) => {
+        const elId = `task-${recordId}`;
+        const currentEl = document.getElementById(elId);
 
-    const textEl = qs('.percent-text', statusEl);
-    let currentPercent = parseFloat(statusEl.style.getPropertyValue('--progress')) || 0;
-
-    const steps = 20;
-    const stepTime = durationMs / steps;
-    const stepPercent = (targetPercent - currentPercent) / steps;
-    let stepCount = 0;
-
-    const interval = setInterval(() => {
-        stepCount++;
-        currentPercent += stepPercent;
-
-        statusEl.style.setProperty('--progress', `${currentPercent}%`);
-        if (textEl) textEl.innerText = `${Math.round(currentPercent)}%`;
-
-        if (stepCount >= steps) {
-            clearInterval(interval);
-            statusEl.style.setProperty('--progress', `${targetPercent}%`);
-            if (textEl) textEl.innerText = `${targetPercent}%`;
-
-            if (targetPercent === 100) {
-                setTimeout(() => {
-                    statusEl.className = 'status success';
-                    statusEl.textContent = TX_STATUS_LABELS[TxStatus.SUCCESS];
-                }, 500);
-            }
+        if (!currentEl) {
+            return resolve();
         }
-    }, stepTime);
+
+        currentEl.style.setProperty('--duration', `${durationMs}ms`);
+
+        // Force reflow để đảm bảo trình duyệt nhận --duration trước khi đổi giá trị
+        void currentEl.offsetWidth;
+
+        currentEl.style.setProperty('--progress', `${targetPercent}%`);
+        currentEl.style.setProperty('--progress-num', Math.floor(targetPercent));
+
+        setTimeout(() => {
+            // Đặt lại duration về 0 sau khi hoàn thành để ngăn các lần cập nhật sau đó bị chậm
+            if (currentEl) currentEl.style.setProperty('--duration', '0ms');
+            resolve();
+        }, durationMs);
+    });
 }

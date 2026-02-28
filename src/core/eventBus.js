@@ -35,6 +35,17 @@ export const eventBus = Object.freeze({
      * @param {*} data
      */
     emit(event, data) {
-        listeners.get(event)?.forEach((fn) => fn(data));
+        listeners.get(event)?.forEach((fn) => {
+            try {
+                const result = fn(data);
+                if (result instanceof Promise) {
+                    result.catch((err) =>
+                        console.error(`[EventBus] async error in "${event}":`, err)
+                    );
+                }
+            } catch (err) {
+                console.error(`[EventBus] error in "${event}":`, err);
+            }
+        });
     },
 });

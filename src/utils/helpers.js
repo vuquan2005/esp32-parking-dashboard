@@ -1,24 +1,4 @@
 /**
- * Shorthand for document.querySelector.
- * @param {string} selector
- * @param {Element} [root=document]
- * @returns {Element|null}
- */
-export function qs(selector, root = document) {
-    return root.querySelector(selector);
-}
-
-/**
- * Shorthand for document.querySelectorAll (returns real Array).
- * @param {string} selector
- * @param {Element} [root=document]
- * @returns {Element[]}
- */
-export function qsa(selector, root = document) {
-    return [...root.querySelectorAll(selector)];
-}
-
-/**
  * Create an HTML element with optional class names and text.
  * @param {string} tag
  * @param {{ class?: string|string[], text?: string, html?: string, attrs?: Record<string,string> }} opts
@@ -41,10 +21,21 @@ export function el(tag, opts = {}) {
     return node;
 }
 
+let _seq = 0;
+
 /**
- * Generate a short random id.
+ * Generate a unique id based on Unix timestamp.
  * @returns {string}
  */
 export function uid() {
-    return Math.random().toString(36).slice(2, 10);
+    return `${Date.now()}-${++_seq}`;
+}
+
+/**
+ * Returns a promise that resolves after the specified milliseconds.
+ * @param {number} ms
+ * @returns {Promise<void>}
+ */
+export function delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }

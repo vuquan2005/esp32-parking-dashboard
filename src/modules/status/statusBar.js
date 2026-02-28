@@ -68,9 +68,6 @@ function render() {
             class: `stat-value ${item.colorClass}`,
             text: String(item.value),
         });
-        if (item.colorClass === 'moving') {
-            valueEl.style.color = 'var(--color-moving)';
-        }
         box.appendChild(valueEl);
 
         box.style.cursor = 'pointer';
