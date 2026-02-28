@@ -26,7 +26,7 @@ export const SLOT_NAMES = ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3']
 export const STATUS_LABELS = Object.freeze({
     [SlotStatus.EMPTY]: 'TRỐNG',
     [SlotStatus.OCCUPIED]: 'ĐÃ CÓ XE',
-    [SlotStatus.MOVING]: 'ĐANG VÀO...',
+    [SlotStatus.MOVING]: 'ĐANG DI CHUYỂN...',
 });
 
 export const ACTION_LABELS = Object.freeze({

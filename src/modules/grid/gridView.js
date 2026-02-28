@@ -36,11 +36,9 @@ function render() {
 
         cell.appendChild(el('div', { class: 'slot-name', text: slot.name }));
 
-        let info = STATUS_LABELS[SlotStatus.EMPTY];
+        let info = STATUS_LABELS[slot.status] || STATUS_LABELS[SlotStatus.EMPTY];
         if (slot.status === SlotStatus.OCCUPIED && slot.uid) {
             info = `UID: ${slot.uid}`;
-        } else if (slot.status === SlotStatus.MOVING) {
-            info = STATUS_LABELS[SlotStatus.MOVING];
         }
         cell.appendChild(el('div', { class: 'slot-info', text: info }));
 
