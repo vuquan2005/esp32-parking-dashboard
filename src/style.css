@@ -314,8 +314,8 @@ body {
   min-width: 120px;
   text-align: center;
   transition:
-    --progress var(--duration, 0ms) linear,
-    --progress-num var(--duration, 0ms) linear;
+    --progress var(--duration, 0ms) ease-out,
+    --progress-num var(--duration, 0ms) ease-out;
 }
 
 .status.processing.progress-bg::before {

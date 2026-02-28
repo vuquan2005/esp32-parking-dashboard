@@ -46,14 +46,11 @@ eventBus.on('ws:history', async (payload) => {
     // If processing, start progress animation
     if (payload.status === TxStatus.PROCESSING) {
         await delay(10);
-        animateProgress(recId, payload.progress ?? 30, 2000);
+        animateProgress(recId, payload.progress ?? 15, 2000);
     }
 });
 
 eventBus.on('ws:progress', async (payload) => {
-    // Progress update for an existing record  { id, progress }
-    updateRecord(payload.id, { progress: payload.progress });
-    await delay(10);
     animateProgress(payload.id, payload.progress, 1000);
 });
 
@@ -67,114 +64,102 @@ eventBus.on('ws:complete', async (payload) => {
 connect();
 
 // ── DEV-ONLY MOCK ────────────────────────────────────────────
-if (import.meta.env.DEV) {
+async function runMock() {
     // ─── 1. Initial slot states ──────────────────────────────
-    setTimeout(() => {
-        eventBus.emit('ws:init', {
-            slots: [
-                { name: 'A1', status: SlotStatus.OCCUPIED, uid: 'AB:12:CD:34' },
-                { name: 'A2', status: SlotStatus.EMPTY, uid: null },
-                { name: 'A3', status: SlotStatus.OCCUPIED, uid: 'EF:56:GH:78' },
-                { name: 'B1', status: SlotStatus.EMPTY, uid: null },
-                { name: 'B2', status: SlotStatus.MOVING, uid: '11:22:33:44' },
-                { name: 'B3', status: SlotStatus.OCCUPIED, uid: 'AA:BB:CC:DD' },
-                { name: 'C1', status: SlotStatus.OCCUPIED },
-                { name: 'C2', status: SlotStatus.EMPTY },
-                { name: 'C3', status: SlotStatus.OCCUPIED, uid: 'FF:EE:DD:CC' },
-            ],
-        });
-    }, 300);
+    await delay(300);
+    eventBus.emit('ws:init', {
+        slots: [
+            { name: 'A1', status: SlotStatus.OCCUPIED, uid: 'AB:12:CD:34' },
+            { name: 'A2', status: SlotStatus.EMPTY, uid: null },
+            { name: 'A3', status: SlotStatus.OCCUPIED, uid: 'EF:56:GH:78' },
+            { name: 'B1', status: SlotStatus.EMPTY, uid: null },
+            { name: 'B2', status: SlotStatus.MOVING, uid: '11:22:33:44' },
+            { name: 'B3', status: SlotStatus.OCCUPIED, uid: 'AA:BB:CC:DD' },
+            { name: 'C1', status: SlotStatus.OCCUPIED },
+            { name: 'C2', status: SlotStatus.EMPTY },
+            { name: 'C3', status: SlotStatus.OCCUPIED, uid: 'FF:EE:DD:CC' },
+        ],
+    });
 
     // ─── 2. Existing history records ─────────────────────────
-    setTimeout(() => {
-        addRecord({ uid: 'AB:12:CD:34', action: Action.IN, slot: 'A1', status: TxStatus.SUCCESS });
-        addRecord({ uid: 'EF:56:GH:78', action: Action.IN, slot: 'A3', status: TxStatus.SUCCESS });
-        addRecord({ uid: 'XX:YY:ZZ:00', action: Action.OUT, slot: 'C1', status: TxStatus.ERROR });
-        addRecord({ uid: 'AA:BB:CC:DD', action: Action.IN, slot: 'B3', status: TxStatus.SUCCESS });
-    }, 500);
+    await delay(200);
+    addRecord({ uid: 'AB:12:CD:34', action: Action.IN, slot: 'A1', status: TxStatus.SUCCESS });
+    addRecord({ uid: 'EF:56:GH:78', action: Action.IN, slot: 'A3', status: TxStatus.SUCCESS });
+    addRecord({ uid: 'XX:YY:ZZ:00', action: Action.OUT, slot: 'C1', status: TxStatus.ERROR });
+    addRecord({ uid: 'AA:BB:CC:DD', action: Action.IN, slot: 'B3', status: TxStatus.SUCCESS });
 
     // ─── 3. Live transaction: vehicle entering B2 ────────────
-    let mockRecordId;
-    setTimeout(() => {
-        eventBus.emit('ws:history', {
-            uid: '11:22:33:44',
-            action: Action.IN,
-            slot: 'B2',
-            status: TxStatus.PROCESSING,
-            progress: 10,
-        });
+    await delay(1000);
+    eventBus.emit('ws:history', {
+        uid: '11:22:33:44',
+        action: Action.IN,
+        slot: 'B2',
+        status: TxStatus.PROCESSING,
+        progress: 10,
+    });
 
-        // Capture the record id from store (latest record = first item)
-        const history = getState('history');
-        mockRecordId = history[0]?.id;
-    }, 1500);
+    // Capture the record id from store (latest record = first item)
+    let history = getState('history');
+    let mockRecordId = history[0]?.id;
 
     // Progress updates
-    setTimeout(() => {
-        if (mockRecordId) eventBus.emit('ws:progress', { id: mockRecordId, progress: 40 });
-    }, 3000);
+    await delay(1500);
+    if (mockRecordId) eventBus.emit('ws:progress', { id: mockRecordId, progress: 40 });
 
-    setTimeout(() => {
-        if (mockRecordId) eventBus.emit('ws:progress', { id: mockRecordId, progress: 70 });
-    }, 4500);
+    await delay(1500);
+    if (mockRecordId) eventBus.emit('ws:progress', { id: mockRecordId, progress: 70 });
 
-    setTimeout(() => {
-        if (mockRecordId) eventBus.emit('ws:progress', { id: mockRecordId, progress: 90 });
-    }, 6000);
+    await delay(1500);
+    if (mockRecordId) eventBus.emit('ws:progress', { id: mockRecordId, progress: 90 });
 
     // Complete → animate to 100% and mark SUCCESS
-    setTimeout(() => {
-        if (mockRecordId) eventBus.emit('ws:complete', { id: mockRecordId });
-    }, 7500);
+    await delay(1500);
+    if (mockRecordId) eventBus.emit('ws:complete', { id: mockRecordId });
 
     // Update slot B2 to occupied after completion
-    setTimeout(() => {
-        eventBus.emit('ws:slot_update', {
-            name: 'B2',
-            status: SlotStatus.OCCUPIED,
-            uid: '11:22:33:44',
-        });
-    }, 9000);
+    await delay(1500);
+    eventBus.emit('ws:slot_update', {
+        name: 'B2',
+        status: SlotStatus.OCCUPIED,
+        uid: '11:22:33:44',
+    });
 
     // ─── 4. Second transaction: vehicle leaving A1 ───────────
-    let mockRecordId2;
-    setTimeout(() => {
-        // Slot starts moving
-        eventBus.emit('ws:slot_update', {
-            name: 'A1',
-            status: SlotStatus.MOVING,
-            uid: 'AB:12:CD:34',
-        });
+    await delay(1000);
+    // Slot starts moving
+    eventBus.emit('ws:slot_update', {
+        name: 'A1',
+        status: SlotStatus.MOVING,
+        uid: 'AB:12:CD:34',
+    });
 
-        eventBus.emit('ws:history', {
-            uid: 'AB:12:CD:34',
-            action: Action.OUT,
-            slot: 'A1',
-            status: TxStatus.PROCESSING,
-            progress: 15,
-        });
+    eventBus.emit('ws:history', {
+        uid: 'AB:12:CD:34',
+        action: Action.OUT,
+        slot: 'A1',
+        status: TxStatus.PROCESSING,
+        progress: 15,
+    });
 
-        const history = getState('history');
-        mockRecordId2 = history[0]?.id;
-    }, 10000);
+    history = getState('history');
+    let mockRecordId2 = history[0]?.id;
 
-    setTimeout(() => {
-        if (mockRecordId2) eventBus.emit('ws:progress', { id: mockRecordId2, progress: 50 });
-    }, 11500);
+    await delay(1500);
+    if (mockRecordId2) eventBus.emit('ws:progress', { id: mockRecordId2, progress: 50 });
 
-    setTimeout(() => {
-        if (mockRecordId2) eventBus.emit('ws:progress', { id: mockRecordId2, progress: 85 });
-    }, 13000);
+    await delay(1500);
+    if (mockRecordId2) eventBus.emit('ws:progress', { id: mockRecordId2, progress: 85 });
 
-    setTimeout(() => {
-        if (mockRecordId2) eventBus.emit('ws:complete', { id: mockRecordId2 });
-    }, 14500);
+    await delay(1500);
+    if (mockRecordId2) eventBus.emit('ws:complete', { id: mockRecordId2 });
 
-    setTimeout(() => {
-        eventBus.emit('ws:slot_update', {
-            name: 'A1',
-            status: SlotStatus.EMPTY,
-            uid: null,
-        });
-    }, 16000);
+    await delay(1500);
+    eventBus.emit('ws:slot_update', {
+        name: 'A1',
+        status: SlotStatus.EMPTY,
+        uid: null,
+    });
+}
+if (import.meta.env.DEV) {
+    runMock();
 }

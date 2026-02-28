@@ -20,7 +20,6 @@ export function addRecord(data) {
                 action: data.action,
                 slot: data.slot ?? '-',
                 status: data.status ?? TxStatus.PENDING,
-                progress: 0,
             },
             ...history,
         ],

@@ -109,27 +109,40 @@ function buildStatusCell(rec) {
     });
 }
 
-export function animateProgress(recordId, targetPercent, durationMs) {
+// Tạo một object để lưu trữ timeout, tránh việc các update chồng chéo nhau
+const progressTimeouts = {};
+
+export function animateProgress(recordId, targetPercent, catchUpDurationMs = 800) {
     return new Promise((resolve) => {
         const elId = `task-${recordId}`;
         const currentEl = document.getElementById(elId);
-
         if (!currentEl) {
             return resolve();
         }
-
-        currentEl.style.setProperty('--duration', `${durationMs}ms`);
-
-        // Force reflow để đảm bảo trình duyệt nhận --duration trước khi đổi giá trị
+        if (progressTimeouts[recordId]) {
+            clearTimeout(progressTimeouts[recordId]);
+        }
+        currentEl.style.setProperty('--duration', `${catchUpDurationMs}ms`);
+        currentEl.style.setProperty('transition-timing-function', 'ease-out');
         void currentEl.offsetWidth;
 
         currentEl.style.setProperty('--progress', `${targetPercent}%`);
         currentEl.style.setProperty('--progress-num', Math.floor(targetPercent));
 
-        setTimeout(() => {
-            // Đặt lại duration về 0 sau khi hoàn thành để ngăn các lần cập nhật sau đó bị chậm
-            if (currentEl) currentEl.style.setProperty('--duration', '0ms');
+        if (targetPercent >= 100) {
+            setTimeout(() => resolve(), catchUpDurationMs);
+            return;
+        }
+        progressTimeouts[recordId] = setTimeout(() => {
+            if (!document.getElementById(elId)) return resolve();
+            currentEl.style.setProperty('--duration', `10000ms`);
+            currentEl.style.setProperty('transition-timing-function', 'cubic-bezier(0, 0, 0, 1)');
+            void currentEl.offsetWidth;
+            const fakeTarget = targetPercent + (100 - targetPercent) * 0.8;
+            currentEl.style.setProperty('--progress', `${fakeTarget}%`);
+            currentEl.style.setProperty('--progress-num', Math.floor(fakeTarget));
+
             resolve();
-        }, durationMs);
+        }, catchUpDurationMs);
     });
 }

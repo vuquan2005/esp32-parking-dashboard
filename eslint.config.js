@@ -1,5 +1,6 @@
 import js from '@eslint/js';
 import eslintConfigPrettier from 'eslint-config-prettier';
+import globals from 'globals';
 
 export default [
     js.configs.recommended,
@@ -9,18 +10,7 @@ export default [
             ecmaVersion: 'latest',
             sourceType: 'module',
             globals: {
-                window: 'readonly',
-                document: 'readonly',
-                console: 'readonly',
-                module: 'readonly',
-                process: 'readonly',
-                fetch: 'readonly',
-                WebSocket: 'readonly',
-                location: 'readonly',
-                setTimeout: 'readonly',
-                setInterval: 'readonly',
-                clearInterval: 'readonly',
-                requestAnimationFrame: 'readonly',
+                ...globals.browser,
             },
         },
         rules: {
