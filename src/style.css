@@ -47,29 +47,45 @@ body {
 .stats-container {
   display: flex;
   gap: 15px;
+  padding: 4px;
 }
 
 .stat-box {
   background: var(--card-bg);
-  padding: 15px 25px;
+  padding: 13px 23px;
   border-radius: 8px;
+  border: 2px solid transparent;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   text-align: center;
   min-width: 100px;
   transition:
+    border-color 0.2s,
     box-shadow 0.2s,
     transform 0.15s;
+  will-change: transform;
 }
 
 .stat-box:hover {
-  transform: translateY(-1px);
+  transform: translate3d(0, -1px, 0);
 }
 
 .stat-box.active {
-  box-shadow:
-    0 0 0 2px var(--color-moving),
-    0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+  transform: translate3d(0, -2px, 0);
+}
+
+.stat-box.active.empty {
+  border-color: var(--color-empty);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-box.active.occupied {
+  border-color: var(--color-occupied);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-box.active.moving {
+  border-color: var(--color-moving);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .stat-label {
@@ -311,7 +327,7 @@ body {
   border: 1px solid #f39c12;
   background-color: transparent;
   z-index: 1;
-  min-width: 120px;
+  min-width: 100px;
   text-align: center;
   transition:
     --progress var(--duration, 0ms) ease-out,

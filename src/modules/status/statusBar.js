@@ -53,8 +53,9 @@ function render() {
     ];
 
     for (const item of items) {
+        const isActive = filters.status === item.filterKey && item.filterKey;
         const box = el('div', {
-            class: `stat-box${filters.status === item.filterKey && item.filterKey ? ' active' : ''}`,
+            class: `stat-box ${item.colorClass} ${isActive ? 'active' : ''}`.trim(),
         });
 
         box.appendChild(

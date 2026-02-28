@@ -19,14 +19,15 @@ export function mountHistory(tableBody) {
 function render() {
     const history = getState('history');
     const filters = getState('filters');
-    tbody.innerHTML = '';
 
     const filtered = history.filter((rec) => {
         if (filters.slot && rec.slot !== filters.slot) return false;
         return true;
     });
 
+    // ── Empty state ──────────────────────────────────────────
     if (filtered.length === 0) {
+        tbody.innerHTML = '';
         const row = el('tr');
         const td = el('td', {
             text: 'Chưa có lịch sử',
@@ -40,43 +41,128 @@ function render() {
         return;
     }
 
+    // ── Collect existing rows keyed by record id ─────────────
+    /** @type {Map<string, HTMLTableRowElement>} */
+    const existingRows = new Map();
+    for (const row of [...tbody.children]) {
+        const id = row.dataset.recordId;
+        if (id) existingRows.set(id, row);
+    }
+
+    // ── Remove rows no longer in filtered list ───────────────
+    const newIds = new Set(filtered.map((r) => r.id));
+    for (const [id, row] of existingRows) {
+        if (!newIds.has(id)) {
+            row.remove();
+            existingRows.delete(id);
+        }
+    }
+
+    // ── Reconcile: reuse existing rows or create new ones ────
+    let cursor = tbody.firstChild;
     for (const rec of filtered) {
-        const row = el('tr');
+        const existing = existingRows.get(rec.id);
+        if (existing) {
+            // Move to correct position if needed
+            if (existing !== cursor) {
+                tbody.insertBefore(existing, cursor);
+            } else {
+                cursor = cursor.nextSibling;
+            }
+            // Patch cells that may have changed
+            patchRow(existing, rec);
+        } else {
+            // Brand-new row
+            const newRow = createRow(rec);
+            tbody.insertBefore(newRow, cursor);
+        }
+    }
 
-        // Timestamp
-        row.appendChild(el('td', { text: rec.timestamp }));
-
-        // UID
-        const uidTd = el('td');
-        uidTd.appendChild(
-            el('code', {
-                text: rec.uid,
-                attrs: { style: 'background:#f0f0f0;padding:2px 4px;' },
-            })
-        );
-        row.appendChild(uidTd);
-
-        // Action badge
-        const actionTd = el('td');
-        actionTd.appendChild(
-            el('span', {
-                class: `badge ${rec.action}`,
-                text: ACTION_LABELS[rec.action] ?? rec.action,
-            })
-        );
-        row.appendChild(actionTd);
-
-        // Slot
-        row.appendChild(el('td', { text: rec.slot }));
-
-        // Status
-        const statusTd = el('td');
-        statusTd.appendChild(buildStatusCell(rec));
-        row.appendChild(statusTd);
-
-        tbody.appendChild(row);
+    // Remove any leftover placeholder rows (e.g. "Chưa có lịch sử")
+    while (tbody.children.length > filtered.length) {
+        tbody.lastChild?.remove();
     }
 }
+
+// ── Row creation ─────────────────────────────────────────────
+
+/**
+ * Create a full `<tr>` for a record.
+ * @param {Object} rec
+ * @returns {HTMLTableRowElement}
+ */
+function createRow(rec) {
+    const row = el('tr');
+    row.dataset.recordId = rec.id;
+
+    // Timestamp
+    row.appendChild(el('td', { text: rec.timestamp }));
+
+    // UID
+    const uidTd = el('td');
+    uidTd.appendChild(
+        el('code', {
+            text: rec.uid,
+            attrs: { style: 'background:#f0f0f0;padding:2px 4px;' },
+        })
+    );
+    row.appendChild(uidTd);
+
+    // Action badge
+    const actionTd = el('td');
+    actionTd.appendChild(
+        el('span', {
+            class: `badge ${rec.action}`,
+            text: ACTION_LABELS[rec.action] ?? rec.action,
+        })
+    );
+    row.appendChild(actionTd);
+
+    // Slot
+    row.appendChild(el('td', { text: rec.slot }));
+
+    // Status
+    const statusTd = el('td');
+    statusTd.appendChild(buildStatusCell(rec));
+    row.appendChild(statusTd);
+
+    return row;
+}
+
+// ── Row patching ─────────────────────────────────────────────
+
+/**
+ * Patch an existing row's cells in-place.
+ * CRITICAL: when the record is PROCESSING, we do NOT touch the status cell
+ * because it owns a live CSS transition driven by animateProgress().
+ * @param {HTMLTableRowElement} row
+ * @param {Object} rec
+ */
+function patchRow(row, rec) {
+    const cells = row.children;
+
+    // [0] Timestamp — immutable, skip
+    // [1] UID — immutable, skip
+    // [2] Action — immutable, skip
+    // [3] Slot — immutable, skip
+
+    // [4] Status — only patch when NOT processing (animation-safe)
+    if (rec.status !== TxStatus.PROCESSING) {
+        const statusTd = cells[4];
+        const currentSpan = statusTd?.firstChild;
+        // Only rebuild if the status actually changed
+        const needsRebuild =
+            !currentSpan ||
+            currentSpan.id === `task-${rec.id}` || // was PROCESSING, now done
+            currentSpan.textContent !== (TX_STATUS_LABELS[rec.status] ?? rec.status);
+        if (needsRebuild) {
+            statusTd.innerHTML = '';
+            statusTd.appendChild(buildStatusCell(rec));
+        }
+    }
+}
+
+// ── Status cell builder ──────────────────────────────────────
 
 /**
  * Build the status cell element, including progress bar for processing state.
@@ -114,6 +200,10 @@ const progressTimeouts = {};
 
 export function animateProgress(recordId, targetPercent, catchUpDurationMs = 800) {
     return new Promise((resolve) => {
+        if (targetPercent >= 100) {
+            setTimeout(() => resolve(), catchUpDurationMs);
+            return;
+        }
         const elId = `task-${recordId}`;
         const currentEl = document.getElementById(elId);
         if (!currentEl) {
@@ -129,10 +219,6 @@ export function animateProgress(recordId, targetPercent, catchUpDurationMs = 800
         currentEl.style.setProperty('--progress', `${targetPercent}%`);
         currentEl.style.setProperty('--progress-num', Math.floor(targetPercent));
 
-        if (targetPercent >= 100) {
-            setTimeout(() => resolve(), catchUpDurationMs);
-            return;
-        }
         progressTimeouts[recordId] = setTimeout(() => {
             if (!document.getElementById(elId)) return resolve();
             currentEl.style.setProperty('--duration', `10000ms`);
