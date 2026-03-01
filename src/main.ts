@@ -1,7 +1,7 @@
 import './style.css';
 
 import { delay } from './utils/helpers';
-import { setState, getState } from './core/store';
+import { setState, getState, hydrate } from './core/store';
 import { eventBus } from './core/eventBus';
 
 // Modules
@@ -86,6 +86,9 @@ eventBus.on('ws:sync_res', (data) => {
 eventBus.on('ws:error', (data) => {
     console.error('[System Error] code:', data.c);
 });
+
+// ── Hydrate views with localStorage data ─────────────────────
+hydrate();
 
 // ── Connect WebSocket ────────────────────────────────────────
 connect();
