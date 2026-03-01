@@ -35,8 +35,8 @@ export const ACTION_LABELS = Object.freeze({
 });
 
 export const TX_STATUS_LABELS = Object.freeze({
-    [TxStatus.PENDING]: 'Chờ xử lý',
-    [TxStatus.PROCESSING]: 'Đang xử lý',
+    [TxStatus.PENDING]: '',
+    [TxStatus.PROCESSING]: '',
     [TxStatus.SUCCESS]: 'Thành công',
     [TxStatus.ERROR]: 'Lỗi',
 });

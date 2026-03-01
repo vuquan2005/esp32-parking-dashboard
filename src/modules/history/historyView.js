@@ -200,10 +200,6 @@ const progressTimeouts = {};
 
 export function animateProgress(recordId, targetPercent, catchUpDurationMs = 800) {
     return new Promise((resolve) => {
-        if (targetPercent >= 100) {
-            setTimeout(() => resolve(), catchUpDurationMs);
-            return;
-        }
         const elId = `task-${recordId}`;
         const currentEl = document.getElementById(elId);
         if (!currentEl) {
@@ -218,6 +214,11 @@ export function animateProgress(recordId, targetPercent, catchUpDurationMs = 800
 
         currentEl.style.setProperty('--progress', `${targetPercent}%`);
         currentEl.style.setProperty('--progress-num', Math.floor(targetPercent));
+
+        if (targetPercent >= 100) {
+            setTimeout(() => resolve(), catchUpDurationMs);
+            return;
+        }
 
         progressTimeouts[recordId] = setTimeout(() => {
             if (!document.getElementById(elId)) return resolve();
