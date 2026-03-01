@@ -1,11 +1,10 @@
-import { getState, setState } from '../../core/store.js';
+import { getState, setState } from '../../core/store';
+import type { SlotData, SlotStatusMessage } from '../../types';
 
 /**
  * Update a single slot with new data.
- * @param {number} sid – slot ID (1-based)
- * @param {{ st?: number, uid?: number|null }} data
  */
-export function updateSlot(sid, data) {
+export function updateSlot(sid: number, data: Partial<Omit<SlotData, 'sid'>>): void {
     const slots = getState('slots');
     const slot = slots.get(sid);
     if (!slot) return;
@@ -17,9 +16,9 @@ export function updateSlot(sid, data) {
 
 /**
  * Bulk-update all slots from a SlotStatusMessage.slots array.
- * @param {Array<{ sid: number, st: number, uid?: number|null }>} list
+ * Reuses the wire-format type directly from types.ts.
  */
-export function setAllSlots(list) {
+export function setAllSlots(list: SlotStatusMessage['slots']): void {
     const slots = getState('slots');
     const newSlots = new Map(slots);
     for (const item of list) {

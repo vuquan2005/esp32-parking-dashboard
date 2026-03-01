@@ -1,17 +1,15 @@
-import { getState, subscribe } from '../../core/store.js';
-import { eventBus } from '../../core/eventBus.js';
-import { SlotState, STATUS_LABELS, SLOT_STATE_CLASS } from '../../utils/constants.js';
-import { SLOT_MAP, formatUid } from '../../core/protocol.js';
-import { el } from '../../utils/helpers.js';
+import { getState, subscribe } from '../../core/store';
+import { eventBus } from '../../core/eventBus';
+import { SlotState, STATUS_LABELS, SLOT_STATE_CLASS } from '../../utils/constants';
+import { SLOT_MAP, formatUid } from '../../core/protocol';
+import { el } from '../../utils/helpers';
 
-/** @type {HTMLElement} */
-let container;
+let container: HTMLElement;
 
 /**
  * Mount the 3×3 parking grid into the given panel element.
- * @param {HTMLElement} panelBody – the `.parking-grid` container
  */
-export function mountGrid(panelBody) {
+export function mountGrid(panelBody: HTMLElement): void {
     container = panelBody;
     render();
 
@@ -21,7 +19,7 @@ export function mountGrid(panelBody) {
 }
 
 /** Full re-render of the 3×3 grid. */
-function render() {
+function render(): void {
     const slots = getState('slots');
     const filters = getState('filters');
     container.innerHTML = '';
@@ -39,7 +37,7 @@ function render() {
         const displayName = SLOT_MAP[slot.sid] ?? `#${slot.sid}`;
         cell.appendChild(el('div', { class: 'slot-name', text: displayName }));
 
-        let info = STATUS_LABELS[slot.st] ?? STATUS_LABELS[SlotState.EMPTY];
+        let info: string = STATUS_LABELS[slot.st] ?? STATUS_LABELS[SlotState.EMPTY];
         if (slot.st === SlotState.OCCUPIED && slot.uid != null) {
             info = `UID: ${formatUid(slot.uid)}`;
         }

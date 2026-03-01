@@ -5,55 +5,47 @@
  * short keys) and the human-readable values the rest of the app uses.
  */
 
-// ── Message types ────────────────────────────────────────────
-export const MessageType = Object.freeze({
-    ACK: 0x01,
-    SYNC_REQ: 0x02,
-    SYNC_RES: 0x03,
-    SLOT_STATUS: 0x10,
-    BATCH_HISTORY: 0x20,
-    PROGRESS: 0x30,
-    COMMAND: 0x50,
-    ERROR: 0xff,
-});
+import { MessageType, CommandType } from '../types';
+import type { EventMap } from './eventBus';
+import type { BaseMessage, CommandMessage, SyncRequestMessage } from '../types';
 
-// ── Command types ────────────────────────────────────────────
-export const CommandType = Object.freeze({
-    PAUSE: 0,
-    RESUME: 1,
-    RESET: 2,
-    HOMING: 3,
-    MOVE: 4,
-});
+// Re-export enums for convenience
+export { MessageType, CommandType } from '../types';
 
 // ── Event name mapping for MessageType → eventBus event ──────
-const EVENT_MAP = Object.freeze({
+type WsEventName = Extract<keyof EventMap, `ws:${string}`>;
+
+const EVENT_MAP = {
     [MessageType.ACK]: 'ws:ack',
     [MessageType.SYNC_RES]: 'ws:sync_res',
     [MessageType.SLOT_STATUS]: 'ws:slot_status',
     [MessageType.BATCH_HISTORY]: 'ws:batch_history',
     [MessageType.PROGRESS]: 'ws:progress',
     [MessageType.ERROR]: 'ws:error',
-});
+} as const satisfies Record<number, WsEventName>;
 
 // ── Slot name ↔ sid mapping ──────────────────────────────────
-export const SLOT_NAMES = ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3'];
+export const SLOT_NAMES = ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3'] as const;
+
+export type SlotName = (typeof SLOT_NAMES)[number];
 
 /** sid (1-based) → display name */
-export const SLOT_MAP = Object.freeze(
-    Object.fromEntries(SLOT_NAMES.map((name, i) => [i + 1, name]))
-);
+export const SLOT_MAP = Object.fromEntries(SLOT_NAMES.map((name, i) => [i + 1, name])) as Record<
+    number,
+    SlotName
+>;
 
 /** display name → sid */
-export const SLOT_ID_MAP = Object.freeze(
-    Object.fromEntries(SLOT_NAMES.map((name, i) => [name, i + 1]))
-);
+export const SLOT_ID_MAP = Object.fromEntries(SLOT_NAMES.map((name, i) => [name, i + 1])) as Record<
+    SlotName,
+    number
+>;
 
 export const TOTAL_SLOTS = SLOT_NAMES.length;
 
 // ── Sequence ID generator ────────────────────────────────────
 let _seqId = 0;
-function nextId() {
+function nextId(): number {
     return ++_seqId;
 }
 
@@ -61,11 +53,9 @@ function nextId() {
 /**
  * Parse a raw JSON-parsed object into { event, data }.
  * Returns null if the message type is unknown.
- * @param {object} msg – parsed JSON from WebSocket
- * @returns {{ event: string, data: object } | null}
  */
-export function parseMessage(msg) {
-    const event = EVENT_MAP[msg.t];
+export function parseMessage(msg: BaseMessage): { event: WsEventName; data: BaseMessage } | null {
+    const event = EVENT_MAP[msg.t as keyof typeof EVENT_MAP];
     if (!event) return null;
     return { event, data: msg };
 }
@@ -74,39 +64,35 @@ export function parseMessage(msg) {
 
 /**
  * Build a CommandMessage.
- * @param {number} cmd – CommandType value
- * @param {number} [param]
- * @param {number} [version=0]
- * @returns {object}
  */
-export function buildCommand(cmd, param, version = 0) {
-    const msg = { id: nextId(), v: version, t: MessageType.COMMAND, cmd };
+export function buildCommand(cmd: CommandType, param?: number, version = 0): CommandMessage {
+    const msg: CommandMessage = {
+        id: nextId(),
+        v: version,
+        t: MessageType.COMMAND,
+        cmd,
+    };
     if (param !== undefined) msg.p = param;
     return msg;
 }
 
 /**
  * Build a SyncRequestMessage.
- * @param {number} lastTs
- * @param {number} lastVer
- * @returns {object}
  */
-export function buildSyncRequest(lastTs, lastVer) {
+export function buildSyncRequest(lastTs: number, lastVer: number): SyncRequestMessage {
     return { id: nextId(), v: 0, t: MessageType.SYNC_REQ, lts: lastTs, lv: lastVer };
 }
 
 // ── UID formatting ───────────────────────────────────────────
 /**
  * Format a numeric UID to uppercase hex display string.
- * @param {number|null|undefined} uid
- * @returns {string}
  */
-export function formatUid(uid) {
+export function formatUid(uid: number | null | undefined): string {
     if (uid == null) return '-';
     return uid
         .toString(16)
         .toUpperCase()
         .padStart(8, '0')
-        .match(/.{1,2}/g)
+        .match(/.{1,2}/g)!
         .join(':');
 }

@@ -1,40 +1,39 @@
 import './style.css';
 
-import { delay } from './utils/helpers.js';
-import { getState, setState } from './core/store.js';
-import { eventBus } from './core/eventBus.js';
-import { connect } from './core/websocket.js';
-import { SLOT_ID_MAP } from './core/protocol.js';
+import { delay } from './utils/helpers';
+import { setState } from './core/store';
+import { eventBus } from './core/eventBus';
 
 // Modules
-import { mountGrid } from './modules/grid/gridView.js';
-import { mountStatusBar } from './modules/status/statusBar.js';
-import { mountHistory, animateProgress } from './modules/history/historyView.js';
-import { updateSlot, setAllSlots } from './modules/grid/gridModel.js';
-import { addRecord, updateRecord } from './modules/history/historyModel.js';
-import { SlotState, ProcessStatus, ActionType } from './utils/constants.js';
+import { mountGrid } from './modules/grid/gridView';
+import { mountStatusBar } from './modules/status/statusBar';
+import { mountHistory, animateProgress } from './modules/history/historyView';
+import { updateSlot, setAllSlots } from './modules/grid/gridModel';
+import { addRecord, updateRecord } from './modules/history/historyModel';
+import { SlotState, ProcessStatus, ActionType } from './utils/constants';
+import { connect } from './core/websocket';
 
 // ── Mount views ──────────────────────────────────────────────
-mountStatusBar(document.querySelector('#stats-container'));
-mountGrid(document.querySelector('#parking-grid'));
-mountHistory(document.querySelector('#history-log'));
+mountStatusBar(document.querySelector('#stats-container')!);
+mountGrid(document.querySelector('#parking-grid')!);
+mountHistory(document.querySelector('#history-log')!);
 
 // ── Filter wiring ────────────────────────────────────────────
 eventBus.on('filter:change', (newFilters) => {
     setState({ filters: newFilters });
 });
 
-// ── WebSocket message handlers (api.ts protocol) ─────────────
+// ── WebSocket message handlers (fully typed via EventMap) ────
 
 // SlotStatusMessage – full or partial slot state update
-eventBus.on('ws:slot_status', (msg) => {
-    if (msg.slots) setAllSlots(msg.slots);
+eventBus.on('ws:slot_status', (data) => {
+    if (data.slots) setAllSlots(data.slots);
 });
 
 // BatchHistoryMessage – batch of history records
-eventBus.on('ws:batch_history', (msg) => {
-    if (msg.recs) {
-        for (const rec of msg.recs) {
+eventBus.on('ws:batch_history', (data) => {
+    if (data.recs) {
+        for (const rec of data.recs) {
             addRecord({
                 uid: rec.uid,
                 act: rec.act,
@@ -46,26 +45,26 @@ eventBus.on('ws:batch_history', (msg) => {
 });
 
 // ProgressMessage – progress update for a running task
-eventBus.on('ws:progress', async (msg) => {
-    animateProgress(msg.rid, msg.p, 1000);
+eventBus.on('ws:progress', async (data) => {
+    animateProgress(String(data.rid), data.p, 1000);
 });
 
 // AckMessage – acknowledgment (used for task completion)
-eventBus.on('ws:ack', async (msg) => {
-    if (msg.st === ProcessStatus.SUCCESS) {
-        await animateProgress(msg.rid, 100, 1000);
+eventBus.on('ws:ack', async (data) => {
+    if (data.st === ProcessStatus.SUCCESS) {
+        await animateProgress(String(data.rid), 100, 1000);
         await delay(500);
-        updateRecord(msg.rid, { st: ProcessStatus.SUCCESS, progress: 100 });
-    } else if (msg.st === ProcessStatus.ERROR) {
-        updateRecord(msg.rid, { st: ProcessStatus.ERROR });
+        updateRecord(String(data.rid), { st: ProcessStatus.SUCCESS, progress: 100 });
+    } else if (data.st === ProcessStatus.ERROR) {
+        updateRecord(String(data.rid), { st: ProcessStatus.ERROR });
     }
 });
 
 // SyncResponseMessage – response to a sync request
-eventBus.on('ws:sync_res', (msg) => {
-    if (msg.updates?.slots) setAllSlots(msg.updates.slots);
-    if (msg.updates?.recs) {
-        for (const rec of msg.updates.recs) {
+eventBus.on('ws:sync_res', (data) => {
+    if (data.updates?.slots) setAllSlots(data.updates.slots);
+    if (data.updates?.recs) {
+        for (const rec of data.updates.recs) {
             addRecord({
                 uid: rec.uid,
                 act: rec.act,
@@ -77,8 +76,8 @@ eventBus.on('ws:sync_res', (msg) => {
 });
 
 // ErrorMessage – system error
-eventBus.on('ws:error', (msg) => {
-    console.error('[System Error] code:', msg.c);
+eventBus.on('ws:error', (data) => {
+    console.error('[System Error] code:', data.c);
 });
 
 // ── Connect WebSocket ────────────────────────────────────────
@@ -90,9 +89,9 @@ async function runMock() {
     await delay(300);
     setAllSlots([
         { sid: 1, st: SlotState.OCCUPIED, uid: 0xab12cd34 },
-        { sid: 2, st: SlotState.EMPTY, uid: null },
+        { sid: 2, st: SlotState.EMPTY, uid: undefined },
         { sid: 3, st: SlotState.OCCUPIED, uid: 0xef56ab78 },
-        { sid: 4, st: SlotState.EMPTY, uid: null },
+        { sid: 4, st: SlotState.EMPTY, uid: undefined },
         { sid: 5, st: SlotState.MOVING, uid: 0x11223344 },
         { sid: 6, st: SlotState.OCCUPIED, uid: 0xaabbccdd },
         { sid: 7, st: SlotState.OCCUPIED },

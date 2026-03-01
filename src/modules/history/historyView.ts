@@ -1,28 +1,27 @@
-import { getState, subscribe } from '../../core/store.js';
+import { getState, subscribe } from '../../core/store';
 import {
     ProcessStatus,
     ACTION_LABELS,
     TX_STATUS_LABELS,
     STATUS_CLASS,
-} from '../../utils/constants.js';
-import { formatUid } from '../../core/protocol.js';
-import { el } from '../../utils/helpers.js';
+} from '../../utils/constants';
+import { formatUid } from '../../core/protocol';
+import { el } from '../../utils/helpers';
+import type { TxRecord } from '../../types';
 
-/** @type {HTMLElement} */
-let tbody;
+let tbody: HTMLElement;
 
 /**
  * Mount the history table view.
- * @param {HTMLElement} tableBody – the `<tbody>` element
  */
-export function mountHistory(tableBody) {
+export function mountHistory(tableBody: HTMLElement): void {
     tbody = tableBody;
     render();
     subscribe('history', render);
     subscribe('filters', render);
 }
 
-function render() {
+function render(): void {
     const history = getState('history');
     const filters = getState('filters');
 
@@ -48,9 +47,8 @@ function render() {
     }
 
     // ── Collect existing rows keyed by record id ─────────────
-    /** @type {Map<string, HTMLTableRowElement>} */
-    const existingRows = new Map();
-    for (const row of [...tbody.children]) {
+    const existingRows = new Map<string, HTMLTableRowElement>();
+    for (const row of [...tbody.children] as HTMLTableRowElement[]) {
         const id = row.dataset.recordId;
         if (id) existingRows.set(id, row);
     }
@@ -65,7 +63,7 @@ function render() {
     }
 
     // ── Reconcile: reuse existing rows or create new ones ────
-    let cursor = tbody.firstChild;
+    let cursor = tbody.firstChild as ChildNode | null;
     for (const rec of filtered) {
         const existing = existingRows.get(rec.id);
         if (existing) {
@@ -94,10 +92,8 @@ function render() {
 
 /**
  * Create a full `<tr>` for a record.
- * @param {Object} rec
- * @returns {HTMLTableRowElement}
  */
-function createRow(rec) {
+function createRow(rec: TxRecord): HTMLTableRowElement {
     const row = el('tr');
     row.dataset.recordId = rec.id;
 
@@ -141,10 +137,8 @@ function createRow(rec) {
  * Patch an existing row's cells in-place.
  * CRITICAL: when the record is PROCESSING, we do NOT touch the status cell
  * because it owns a live CSS transition driven by animateProgress().
- * @param {HTMLTableRowElement} row
- * @param {Object} rec
  */
-function patchRow(row, rec) {
+function patchRow(row: HTMLTableRowElement, rec: TxRecord): void {
     const cells = row.children;
 
     // [0] Timestamp — immutable, skip
@@ -154,14 +148,14 @@ function patchRow(row, rec) {
 
     // [4] Status — only patch when NOT processing (animation-safe)
     if (rec.st !== ProcessStatus.PROCESSING) {
-        const statusTd = cells[4];
-        const currentSpan = statusTd?.firstChild;
+        const statusTd = cells[4] as HTMLElement | undefined;
+        const currentSpan = statusTd?.firstChild as HTMLElement | null;
         // Only rebuild if the status actually changed
         const needsRebuild =
             !currentSpan ||
             currentSpan.id === `task-${rec.id}` || // was PROCESSING, now done
             currentSpan.textContent !== (TX_STATUS_LABELS[rec.st] ?? String(rec.st));
-        if (needsRebuild) {
+        if (needsRebuild && statusTd) {
             statusTd.innerHTML = '';
             statusTd.appendChild(buildStatusCell(rec));
         }
@@ -172,17 +166,15 @@ function patchRow(row, rec) {
 
 /**
  * Build the status cell element, including progress bar for processing state.
- * @param {Object} rec
- * @returns {HTMLElement}
  */
-function buildStatusCell(rec) {
+function buildStatusCell(rec: TxRecord): HTMLElement {
     if (rec.st === ProcessStatus.PROCESSING) {
         const span = el('span', {
             class: 'status processing progress-bg',
             attrs: { id: `task-${rec.id}` },
         });
         span.style.setProperty('--progress', `${rec.progress ?? 0}%`);
-        span.style.setProperty('--progress-num', Math.floor(rec.progress ?? 0));
+        span.style.setProperty('--progress-num', String(Math.floor(rec.progress ?? 0)));
         span.textContent = TX_STATUS_LABELS[ProcessStatus.PROCESSING] + ' ';
         span.appendChild(el('span', { class: 'percent-text' }));
         return span;
@@ -197,9 +189,13 @@ function buildStatusCell(rec) {
 }
 
 // Tạo một object để lưu trữ timeout, tránh việc các update chồng chéo nhau
-const progressTimeouts = {};
+const progressTimeouts: Record<string, ReturnType<typeof setTimeout>> = {};
 
-export function animateProgress(recordId, targetPercent, catchUpDurationMs = 800) {
+export function animateProgress(
+    recordId: string,
+    targetPercent: number,
+    catchUpDurationMs = 800
+): Promise<void> {
     return new Promise((resolve) => {
         const elId = `task-${recordId}`;
         const currentEl = document.getElementById(elId);
@@ -214,7 +210,7 @@ export function animateProgress(recordId, targetPercent, catchUpDurationMs = 800
         void currentEl.offsetWidth;
 
         currentEl.style.setProperty('--progress', `${targetPercent}%`);
-        currentEl.style.setProperty('--progress-num', Math.floor(targetPercent));
+        currentEl.style.setProperty('--progress-num', String(Math.floor(targetPercent)));
 
         if (targetPercent >= 100) {
             setTimeout(() => resolve(), catchUpDurationMs);
@@ -228,7 +224,7 @@ export function animateProgress(recordId, targetPercent, catchUpDurationMs = 800
             void currentEl.offsetWidth;
             const fakeTarget = targetPercent + (100 - targetPercent) * 0.8;
             currentEl.style.setProperty('--progress', `${fakeTarget}%`);
-            currentEl.style.setProperty('--progress-num', Math.floor(fakeTarget));
+            currentEl.style.setProperty('--progress-num', String(Math.floor(fakeTarget)));
 
             resolve();
         }, catchUpDurationMs);

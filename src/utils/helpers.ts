@@ -1,10 +1,15 @@
+import type { ElOptions } from '../types';
+
 /**
- * Create an HTML element with optional class names and text.
- * @param {string} tag
- * @param {{ class?: string|string[], text?: string, html?: string, attrs?: Record<string,string> }} opts
- * @returns {HTMLElement}
+ * Create a typed HTML element with optional class names and text.
+ * Returns the correct HTMLElement subtype based on the tag name.
  */
-export function el(tag, opts = {}) {
+export function el<K extends keyof HTMLElementTagNameMap>(
+    tag: K,
+    opts?: ElOptions
+): HTMLElementTagNameMap[K];
+export function el(tag: string, opts?: ElOptions): HTMLElement;
+export function el(tag: string, opts: ElOptions = {}): HTMLElement {
     const node = document.createElement(tag);
 
     if (opts.class) {
@@ -23,19 +28,14 @@ export function el(tag, opts = {}) {
 
 let _seq = 0;
 
-/**
- * Generate a unique id based on Unix timestamp.
- * @returns {string}
- */
-export function uid() {
+/** Generate a unique id based on Unix timestamp. */
+export function uid(): string {
     return `${Date.now()}-${++_seq}`;
 }
 
 /**
  * Returns a promise that resolves after the specified milliseconds.
- * @param {number} ms
- * @returns {Promise<void>}
  */
-export function delay(ms) {
+export function delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }

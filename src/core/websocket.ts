@@ -1,5 +1,7 @@
-import { eventBus } from './eventBus.js';
-import { parseMessage } from './protocol.js';
+import { eventBus } from './eventBus';
+import { parseMessage } from './protocol';
+import type { BaseMessage, CommandMessage, SyncRequestMessage } from '../types';
+import type { EventMap } from './eventBus';
 
 /**
  * WebSocket client with auto-reconnect.
@@ -8,25 +10,23 @@ import { parseMessage } from './protocol.js';
  *   { id, v, t, ... }
  *
  * Each message is decoded by protocol.parseMessage() and forwarded
- * to eventBus as the corresponding event.
+ * to eventBus as the corresponding typed event.
  */
 
-/** @type {WebSocket|null} */
-let socket = null;
+let socket: WebSocket | null = null;
 let reconnectDelay = 1000;
 const MAX_DELAY = 30000;
 let url = '';
 
 /**
  * Connect to the WebSocket server.
- * @param {string} [wsUrl] – defaults to `ws://<currentHost>/ws`
  */
-export function connect(wsUrl) {
+export function connect(wsUrl?: string): void {
     url = wsUrl || `ws://${location.host}/ws`;
     _open();
 }
 
-function _open() {
+function _open(): void {
     socket = new WebSocket(url);
 
     socket.addEventListener('open', () => {
@@ -35,12 +35,17 @@ function _open() {
         eventBus.emit('ws:open');
     });
 
-    socket.addEventListener('message', (event) => {
+    socket.addEventListener('message', (event: MessageEvent) => {
         try {
-            const raw = JSON.parse(event.data);
+            const raw = JSON.parse(event.data as string) as BaseMessage;
             const parsed = parseMessage(raw);
             if (parsed) {
-                eventBus.emit(parsed.event, parsed.data);
+                // Safe: parseMessage guarantees event name matches the data type
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (eventBus.emit as (event: keyof EventMap, data: any) => void)(
+                    parsed.event,
+                    parsed.data
+                );
             } else {
                 console.warn('[WS] unknown message type', raw.t);
             }
@@ -56,7 +61,7 @@ function _open() {
         reconnectDelay = Math.min(reconnectDelay * 2, MAX_DELAY);
     });
 
-    socket.addEventListener('error', (err) => {
+    socket.addEventListener('error', (err: Event) => {
         console.error('[WS] error', err);
         socket?.close();
     });
@@ -64,9 +69,8 @@ function _open() {
 
 /**
  * Send a typed message object to ESP32.
- * @param {object} msg – a fully-formed message object (e.g. from buildCommand)
  */
-export function send(msg) {
+export function send(msg: CommandMessage | SyncRequestMessage): void {
     if (socket?.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify(msg));
     } else {

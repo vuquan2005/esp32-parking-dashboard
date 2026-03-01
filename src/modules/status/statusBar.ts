@@ -1,23 +1,28 @@
-import { getState, subscribe } from '../../core/store.js';
-import { eventBus } from '../../core/eventBus.js';
-import { SlotState, SLOT_STATE_CLASS } from '../../utils/constants.js';
-import { el } from '../../utils/helpers.js';
+import { getState, subscribe } from '../../core/store';
+import { eventBus } from '../../core/eventBus';
+import { SlotState, SLOT_STATE_CLASS } from '../../utils/constants';
+import { el } from '../../utils/helpers';
 
-/** @type {HTMLElement} */
-let container;
+let container: HTMLElement;
 
 /**
  * Mount the status bar into the given container.
- * @param {HTMLElement} statsContainer – the `.stats-container` element
  */
-export function mountStatusBar(statsContainer) {
+export function mountStatusBar(statsContainer: HTMLElement): void {
     container = statsContainer;
     render();
     subscribe('slots', render);
     subscribe('filters', render);
 }
 
-function render() {
+interface StatItem {
+    label: string;
+    value: number;
+    colorClass: string;
+    filterKey: SlotState | null;
+}
+
+function render(): void {
     const slots = [...getState('slots').values()];
     const filters = getState('filters');
 
@@ -30,7 +35,7 @@ function render() {
 
     container.innerHTML = '';
 
-    const items = [
+    const items: StatItem[] = [
         { label: 'Tổng số ô', value: counts.total, colorClass: '', filterKey: null },
         {
             label: 'Chỗ trống',
