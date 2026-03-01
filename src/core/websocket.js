@@ -1,12 +1,14 @@
 import { eventBus } from './eventBus.js';
+import { parseMessage } from './protocol.js';
 
 /**
  * WebSocket client with auto-reconnect.
  *
- * Incoming messages are expected as JSON:
- *   { type: string, payload: object }
+ * Incoming messages follow the api.ts BaseMessage format:
+ *   { id, v, t, ... }
  *
- * Each message is forwarded to eventBus as `ws:<type>`.
+ * Each message is decoded by protocol.parseMessage() and forwarded
+ * to eventBus as the corresponding event.
  */
 
 /** @type {WebSocket|null} */
@@ -35,8 +37,13 @@ function _open() {
 
     socket.addEventListener('message', (event) => {
         try {
-            const msg = JSON.parse(event.data);
-            eventBus.emit(`ws:${msg.type}`, msg.payload);
+            const raw = JSON.parse(event.data);
+            const parsed = parseMessage(raw);
+            if (parsed) {
+                eventBus.emit(parsed.event, parsed.data);
+            } else {
+                console.warn('[WS] unknown message type', raw.t);
+            }
         } catch {
             console.warn('[WS] invalid JSON', event.data);
         }
@@ -56,14 +63,13 @@ function _open() {
 }
 
 /**
- * Send a message to ESP32.
- * @param {string} type
- * @param {object} payload
+ * Send a typed message object to ESP32.
+ * @param {object} msg – a fully-formed message object (e.g. from buildCommand)
  */
-export function send(type, payload) {
+export function send(msg) {
     if (socket?.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type, payload }));
+        socket.send(JSON.stringify(msg));
     } else {
-        console.warn('[WS] not connected – message dropped', type);
+        console.warn('[WS] not connected – message dropped', msg);
     }
 }

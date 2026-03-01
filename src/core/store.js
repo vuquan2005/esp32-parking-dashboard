@@ -1,12 +1,13 @@
-import { SLOT_NAMES, SlotStatus } from '../utils/constants.js';
+import { SlotState } from '../utils/constants.js';
+import { TOTAL_SLOTS } from '../core/protocol.js';
 
 /**
  * Global reactive state store with pub/sub.
  *
  * Shape:
- *   slots    – Map<slotName, { id, name, status, uid }>
+ *   slots    – Map<sid:number, { sid, st, uid }>
  *   history  – Array<TxRecord>
- *   filters  – { slot: string|null, status: string|null }
+ *   filters  – { sid: number|null, status: number|null }
  */
 
 /** @type {Map<string, Set<Function>>} */
@@ -14,20 +15,20 @@ const subscribers = new Map();
 
 /** Internal state */
 const state = {
-    /** @type {Map<string, { id: number, name: string, status: string, uid: string|null }>} */
+    /** @type {Map<number, { sid: number, st: number, uid: number|null }>} */
     slots: new Map(
-        SLOT_NAMES.map((name, i) => [
-            name,
-            { id: i + 1, name, status: SlotStatus.EMPTY, uid: null },
+        Array.from({ length: TOTAL_SLOTS }, (_, i) => [
+            i + 1,
+            { sid: i + 1, st: SlotState.EMPTY, uid: null },
         ])
     ),
 
     /** @type {Array<Object>} */
     history: [],
 
-    /** Active filters */
+    /** Active filters (now numeric) */
     filters: {
-        slot: null,
+        sid: null,
         status: null,
     },
 };

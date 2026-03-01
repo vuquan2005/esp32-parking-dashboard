@@ -1,42 +1,62 @@
-/** Slot statuses */
-export const SlotStatus = Object.freeze({
-    EMPTY: 'empty',
-    OCCUPIED: 'occupied',
-    MOVING: 'moving',
+/**
+ * Domain constants aligned with api.ts numeric enums.
+ * Display labels are keyed by these numeric values.
+ */
+
+/** Slot states (matches api.ts SlotState, MOVING replaces RESERVED) */
+export const SlotState = Object.freeze({
+    EMPTY: 0,
+    OCCUPIED: 1,
+    MOVING: 2,
+    ERROR: 3,
 });
 
-/** Transaction actions */
-export const Action = Object.freeze({
-    IN: 'in',
-    OUT: 'out',
+/** Vehicle action types (matches api.ts ActionType) */
+export const ActionType = Object.freeze({
+    IN: 0,
+    OUT: 1,
 });
 
-/** Transaction record statuses */
-export const TxStatus = Object.freeze({
-    PENDING: 'pending',
-    PROCESSING: 'processing',
-    SUCCESS: 'success',
-    ERROR: 'error',
+/** Process / transaction status (matches api.ts ProcessStatus) */
+export const ProcessStatus = Object.freeze({
+    ERROR: 0,
+    SUCCESS: 1,
+    PENDING: 2,
+    PROCESSING: 3,
 });
-
-/** Slot names (row-major: A1..C3) */
-export const SLOT_NAMES = ['A1', 'A2', 'A3', 'B1', 'B2', 'B3', 'C1', 'C2', 'C3'];
 
 /** Display labels (Vietnamese) */
 export const STATUS_LABELS = Object.freeze({
-    [SlotStatus.EMPTY]: 'TRỐNG',
-    [SlotStatus.OCCUPIED]: 'ĐÃ CÓ XE',
-    [SlotStatus.MOVING]: 'ĐANG DI CHUYỂN...',
+    [SlotState.EMPTY]: 'TRỐNG',
+    [SlotState.OCCUPIED]: 'ĐÃ CÓ XE',
+    [SlotState.MOVING]: 'ĐANG DI CHUYỂN...',
+    [SlotState.ERROR]: 'LỖI',
 });
 
 export const ACTION_LABELS = Object.freeze({
-    [Action.IN]: 'VÀO',
-    [Action.OUT]: 'RA',
+    [ActionType.IN]: 'VÀO',
+    [ActionType.OUT]: 'RA',
 });
 
 export const TX_STATUS_LABELS = Object.freeze({
-    [TxStatus.PENDING]: '',
-    [TxStatus.PROCESSING]: '',
-    [TxStatus.SUCCESS]: 'Thành công',
-    [TxStatus.ERROR]: 'Lỗi',
+    [ProcessStatus.PENDING]: '',
+    [ProcessStatus.PROCESSING]: '',
+    [ProcessStatus.SUCCESS]: 'Thành công',
+    [ProcessStatus.ERROR]: 'Lỗi',
+});
+
+/** CSS class name for each slot state */
+export const SLOT_STATE_CLASS = Object.freeze({
+    [SlotState.EMPTY]: 'empty',
+    [SlotState.OCCUPIED]: 'occupied',
+    [SlotState.MOVING]: 'moving',
+    [SlotState.ERROR]: 'error',
+});
+
+/** CSS class name for each process status */
+export const STATUS_CLASS = Object.freeze({
+    [ProcessStatus.SUCCESS]: 'success',
+    [ProcessStatus.ERROR]: 'error',
+    [ProcessStatus.PROCESSING]: 'processing',
+    [ProcessStatus.PENDING]: 'processing',
 });

@@ -1,6 +1,6 @@
 import { getState, subscribe } from '../../core/store.js';
 import { eventBus } from '../../core/eventBus.js';
-import { SlotStatus } from '../../utils/constants.js';
+import { SlotState, SLOT_STATE_CLASS } from '../../utils/constants.js';
 import { el } from '../../utils/helpers.js';
 
 /** @type {HTMLElement} */
@@ -23,9 +23,9 @@ function render() {
 
     const counts = {
         total: slots.length,
-        empty: slots.filter((s) => s.status === SlotStatus.EMPTY).length,
-        occupied: slots.filter((s) => s.status === SlotStatus.OCCUPIED).length,
-        moving: slots.filter((s) => s.status === SlotStatus.MOVING).length,
+        empty: slots.filter((s) => s.st === SlotState.EMPTY).length,
+        occupied: slots.filter((s) => s.st === SlotState.OCCUPIED).length,
+        moving: slots.filter((s) => s.st === SlotState.MOVING).length,
     };
 
     container.innerHTML = '';
@@ -35,25 +35,25 @@ function render() {
         {
             label: 'Chỗ trống',
             value: counts.empty,
-            colorClass: 'empty',
-            filterKey: SlotStatus.EMPTY,
+            colorClass: SLOT_STATE_CLASS[SlotState.EMPTY],
+            filterKey: SlotState.EMPTY,
         },
         {
             label: 'Đã có xe',
             value: counts.occupied,
-            colorClass: 'occupied',
-            filterKey: SlotStatus.OCCUPIED,
+            colorClass: SLOT_STATE_CLASS[SlotState.OCCUPIED],
+            filterKey: SlotState.OCCUPIED,
         },
         {
             label: 'Đang xử lý',
             value: counts.moving,
-            colorClass: 'moving',
-            filterKey: SlotStatus.MOVING,
+            colorClass: SLOT_STATE_CLASS[SlotState.MOVING],
+            filterKey: SlotState.MOVING,
         },
     ];
 
     for (const item of items) {
-        const isActive = filters.status === item.filterKey && item.filterKey;
+        const isActive = filters.status === item.filterKey && item.filterKey != null;
         const box = el('div', {
             class: `stat-box ${item.colorClass} ${isActive ? 'active' : ''}`.trim(),
         });
@@ -77,13 +77,13 @@ function render() {
             const current = getState('filters');
 
             if (item.filterKey === null) {
-                eventBus.emit('filter:change', { ...current, status: null, slot: null });
+                eventBus.emit('filter:change', { ...current, status: null, sid: null });
             } else {
                 eventBus.emit(
                     'filter:change',
                     current.status === item.filterKey
                         ? { ...current, status: null }
-                        : { ...current, status: item.filterKey, slot: null }
+                        : { ...current, status: item.filterKey, sid: null }
                 );
             }
         });

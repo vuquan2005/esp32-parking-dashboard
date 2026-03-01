@@ -1,11 +1,12 @@
 import { getState, setState } from '../../core/store.js';
 import { uid } from '../../utils/helpers.js';
-import { TxStatus } from '../../utils/constants.js';
+import { ProcessStatus } from '../../utils/constants.js';
 import { formatTime } from '../../utils/time.js';
+import { SLOT_MAP } from '../../core/protocol.js';
 
 /**
  * Add a new transaction record (prepended).
- * @param {{ uid: string, action: string, slot: string|null, status?: string }} data
+ * @param {{ uid: number, act: number, sid: number, st?: number }} data
  * @returns {string} record id
  */
 export function addRecord(data) {
@@ -17,9 +18,10 @@ export function addRecord(data) {
                 id,
                 timestamp: formatTime(),
                 uid: data.uid,
-                action: data.action,
-                slot: data.slot ?? '-',
-                status: data.status ?? TxStatus.PENDING,
+                act: data.act,
+                sid: data.sid,
+                slot: SLOT_MAP[data.sid] ?? '-',
+                st: data.st ?? ProcessStatus.PENDING,
             },
             ...history,
         ],

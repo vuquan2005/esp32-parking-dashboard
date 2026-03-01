@@ -1,6 +1,7 @@
 import { getState, subscribe } from '../../core/store.js';
 import { eventBus } from '../../core/eventBus.js';
-import { SlotStatus, STATUS_LABELS } from '../../utils/constants.js';
+import { SlotState, STATUS_LABELS, SLOT_STATE_CLASS } from '../../utils/constants.js';
+import { SLOT_MAP, formatUid } from '../../core/protocol.js';
 import { el } from '../../utils/helpers.js';
 
 /** @type {HTMLElement} */
@@ -27,18 +28,20 @@ function render() {
 
     for (const slot of slots.values()) {
         const dimmed =
-            (filters.status && slot.status !== filters.status) ||
-            (filters.slot && slot.name !== filters.slot);
+            (filters.status != null && slot.st !== filters.status) ||
+            (filters.sid != null && slot.sid !== filters.sid);
 
+        const stateClass = SLOT_STATE_CLASS[slot.st] ?? 'empty';
         const cell = el('div', {
-            class: `slot ${slot.status}${dimmed ? ' dimmed' : ''}`,
+            class: `slot ${stateClass}${dimmed ? ' dimmed' : ''}`,
         });
 
-        cell.appendChild(el('div', { class: 'slot-name', text: slot.name }));
+        const displayName = SLOT_MAP[slot.sid] ?? `#${slot.sid}`;
+        cell.appendChild(el('div', { class: 'slot-name', text: displayName }));
 
-        let info = STATUS_LABELS[slot.status] || STATUS_LABELS[SlotStatus.EMPTY];
-        if (slot.status === SlotStatus.OCCUPIED && slot.uid) {
-            info = `UID: ${slot.uid}`;
+        let info = STATUS_LABELS[slot.st] ?? STATUS_LABELS[SlotState.EMPTY];
+        if (slot.st === SlotState.OCCUPIED && slot.uid != null) {
+            info = `UID: ${formatUid(slot.uid)}`;
         }
         cell.appendChild(el('div', { class: 'slot-info', text: info }));
 
@@ -46,9 +49,9 @@ function render() {
             const current = getState('filters');
             eventBus.emit(
                 'filter:change',
-                current.slot === slot.name
-                    ? { ...current, slot: null }
-                    : { ...current, slot: slot.name, status: null }
+                current.sid === slot.sid
+                    ? { ...current, sid: null }
+                    : { ...current, sid: slot.sid, status: null }
             );
         });
 

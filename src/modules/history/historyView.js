@@ -1,5 +1,11 @@
 import { getState, subscribe } from '../../core/store.js';
-import { TxStatus, ACTION_LABELS, TX_STATUS_LABELS } from '../../utils/constants.js';
+import {
+    ProcessStatus,
+    ACTION_LABELS,
+    TX_STATUS_LABELS,
+    STATUS_CLASS,
+} from '../../utils/constants.js';
+import { formatUid } from '../../core/protocol.js';
 import { el } from '../../utils/helpers.js';
 
 /** @type {HTMLElement} */
@@ -21,7 +27,7 @@ function render() {
     const filters = getState('filters');
 
     const filtered = history.filter((rec) => {
-        if (filters.slot && rec.slot !== filters.slot) return false;
+        if (filters.sid != null && rec.sid !== filters.sid) return false;
         return true;
     });
 
@@ -98,11 +104,11 @@ function createRow(rec) {
     // Timestamp
     row.appendChild(el('td', { text: rec.timestamp }));
 
-    // UID
+    // UID (formatted as hex)
     const uidTd = el('td');
     uidTd.appendChild(
         el('code', {
-            text: rec.uid,
+            text: formatUid(rec.uid),
             attrs: { style: 'background:#f0f0f0;padding:2px 4px;' },
         })
     );
@@ -112,8 +118,8 @@ function createRow(rec) {
     const actionTd = el('td');
     actionTd.appendChild(
         el('span', {
-            class: `badge ${rec.action}`,
-            text: ACTION_LABELS[rec.action] ?? rec.action,
+            class: `badge ${rec.act === 0 ? 'in' : 'out'}`,
+            text: ACTION_LABELS[rec.act] ?? String(rec.act),
         })
     );
     row.appendChild(actionTd);
@@ -147,14 +153,14 @@ function patchRow(row, rec) {
     // [3] Slot — immutable, skip
 
     // [4] Status — only patch when NOT processing (animation-safe)
-    if (rec.status !== TxStatus.PROCESSING) {
+    if (rec.st !== ProcessStatus.PROCESSING) {
         const statusTd = cells[4];
         const currentSpan = statusTd?.firstChild;
         // Only rebuild if the status actually changed
         const needsRebuild =
             !currentSpan ||
             currentSpan.id === `task-${rec.id}` || // was PROCESSING, now done
-            currentSpan.textContent !== (TX_STATUS_LABELS[rec.status] ?? rec.status);
+            currentSpan.textContent !== (TX_STATUS_LABELS[rec.st] ?? String(rec.st));
         if (needsRebuild) {
             statusTd.innerHTML = '';
             statusTd.appendChild(buildStatusCell(rec));
@@ -170,28 +176,23 @@ function patchRow(row, rec) {
  * @returns {HTMLElement}
  */
 function buildStatusCell(rec) {
-    if (rec.status === TxStatus.PROCESSING) {
+    if (rec.st === ProcessStatus.PROCESSING) {
         const span = el('span', {
             class: 'status processing progress-bg',
             attrs: { id: `task-${rec.id}` },
         });
         span.style.setProperty('--progress', `${rec.progress ?? 0}%`);
         span.style.setProperty('--progress-num', Math.floor(rec.progress ?? 0));
-        span.textContent = TX_STATUS_LABELS[TxStatus.PROCESSING] + ' ';
+        span.textContent = TX_STATUS_LABELS[ProcessStatus.PROCESSING] + ' ';
         span.appendChild(el('span', { class: 'percent-text' }));
         return span;
     }
 
-    const statusClass =
-        rec.status === TxStatus.SUCCESS
-            ? 'success'
-            : rec.status === TxStatus.ERROR
-              ? 'error'
-              : 'processing';
+    const statusClass = STATUS_CLASS[rec.st] ?? 'processing';
 
     return el('span', {
         class: `status ${statusClass}`,
-        text: TX_STATUS_LABELS[rec.status] ?? rec.status,
+        text: TX_STATUS_LABELS[rec.st] ?? String(rec.st),
     });
 }
 
