@@ -1,16 +1,17 @@
 import './style.css';
 
 import { delay } from './utils/helpers';
-import { setState } from './core/store';
+import { setState, getState } from './core/store';
 import { eventBus } from './core/eventBus';
 
 // Modules
 import { mountGrid } from './modules/grid/gridView';
 import { mountStatusBar } from './modules/status/statusBar';
 import { mountHistory, animateProgress } from './modules/history/historyView';
-import { updateSlot, setAllSlots } from './modules/grid/gridModel';
+import { setAllSlots } from './modules/grid/gridModel';
 import { addRecord, updateRecord } from './modules/history/historyModel';
 import { SlotState, ProcessStatus, ActionType } from './utils/constants';
+import { MessageType } from './types';
 import { connect } from './core/websocket';
 
 // ── Mount views ──────────────────────────────────────────────
@@ -30,23 +31,29 @@ eventBus.on('ws:slot_status', (data) => {
     if (data.slots) setAllSlots(data.slots);
 });
 
-// BatchHistoryMessage – batch of history records
-eventBus.on('ws:batch_history', (data) => {
-    if (data.recs) {
-        for (const rec of data.recs) {
-            addRecord({
-                uid: rec.uid,
-                act: rec.act,
-                sid: rec.sid,
-                st: rec.st,
-            });
-        }
+// HistoryMessage – single history record
+eventBus.on('ws:history', (data) => {
+    const rec = data.rec;
+    if (!rec) return;
+    const recId = addRecord({
+        uid: rec.uid,
+        act: rec.act,
+        sid: rec.sid,
+        st: rec.st,
+    });
+    // Animate for active statuses
+    if (
+        rec.st === ProcessStatus.PROCESSING ||
+        rec.st === ProcessStatus.SUCCESS ||
+        rec.st === ProcessStatus.PENDING
+    ) {
+        animateProgress(recId, rec.st === ProcessStatus.SUCCESS ? 100 : 10, 2000);
     }
 });
 
 // ProgressMessage – progress update for a running task
 eventBus.on('ws:progress', async (data) => {
-    animateProgress(String(data.rid), data.p, 1000);
+    animateProgress(String(data.rid), data.p, 2000);
 });
 
 // AckMessage – acknowledgment (used for task completion)
@@ -87,86 +94,197 @@ connect();
 async function runMock() {
     // ─── 1. Initial slot states (SlotStatusMessage format) ───
     await delay(300);
-    setAllSlots([
-        { sid: 1, st: SlotState.OCCUPIED, uid: 0xab12cd34 },
-        { sid: 2, st: SlotState.EMPTY, uid: undefined },
-        { sid: 3, st: SlotState.OCCUPIED, uid: 0xef56ab78 },
-        { sid: 4, st: SlotState.EMPTY, uid: undefined },
-        { sid: 5, st: SlotState.MOVING, uid: 0x11223344 },
-        { sid: 6, st: SlotState.OCCUPIED, uid: 0xaabbccdd },
-        { sid: 7, st: SlotState.OCCUPIED },
-        { sid: 8, st: SlotState.EMPTY },
-        { sid: 9, st: SlotState.OCCUPIED, uid: 0xffeeddcc },
-    ]);
+    eventBus.emit('ws:slot_status', {
+        id: 1,
+        v: 0,
+        t: MessageType.SLOT_STATUS,
+        slots: [
+            { sid: 1, st: SlotState.OCCUPIED, uid: 0xab12cd34 },
+            { sid: 2, st: SlotState.EMPTY, uid: undefined },
+            { sid: 3, st: SlotState.OCCUPIED, uid: 0xef56ab78 },
+            { sid: 4, st: SlotState.EMPTY, uid: undefined },
+            { sid: 5, st: SlotState.MOVING, uid: 0x11223344 },
+            { sid: 6, st: SlotState.OCCUPIED, uid: 0xaabbccdd },
+            { sid: 7, st: SlotState.OCCUPIED },
+            { sid: 8, st: SlotState.EMPTY },
+            { sid: 9, st: SlotState.OCCUPIED, uid: 0xffeeddcc },
+        ],
+    });
 
     // ─── 2. Existing history records ─────────────────────────
     await delay(200);
-    addRecord({ uid: 0xab12cd34, act: ActionType.IN, sid: 1, st: ProcessStatus.SUCCESS });
-    addRecord({ uid: 0xef56ab78, act: ActionType.IN, sid: 3, st: ProcessStatus.SUCCESS });
-    addRecord({ uid: 0xaabb0000, act: ActionType.OUT, sid: 7, st: ProcessStatus.ERROR });
-    addRecord({ uid: 0xaabbccdd, act: ActionType.IN, sid: 6, st: ProcessStatus.SUCCESS });
+    eventBus.emit('ws:history', {
+        id: 2,
+        v: 0,
+        t: MessageType.HISTORY,
+        rec: {
+            ts: Date.now(),
+            uid: 0xab12cd34,
+            act: ActionType.IN,
+            sid: 1,
+            st: ProcessStatus.SUCCESS,
+        },
+    });
+    eventBus.emit('ws:history', {
+        id: 3,
+        v: 0,
+        t: MessageType.HISTORY,
+        rec: {
+            ts: Date.now(),
+            uid: 0xef56ab78,
+            act: ActionType.IN,
+            sid: 3,
+            st: ProcessStatus.SUCCESS,
+        },
+    });
+    eventBus.emit('ws:history', {
+        id: 4,
+        v: 0,
+        t: MessageType.HISTORY,
+        rec: {
+            ts: Date.now(),
+            uid: 0xaabb0000,
+            act: ActionType.OUT,
+            sid: 7,
+            st: ProcessStatus.ERROR,
+        },
+    });
+    eventBus.emit('ws:history', {
+        id: 5,
+        v: 0,
+        t: MessageType.HISTORY,
+        rec: {
+            ts: Date.now(),
+            uid: 0xaabbccdd,
+            act: ActionType.IN,
+            sid: 6,
+            st: ProcessStatus.SUCCESS,
+        },
+    });
 
     // ─── 3. Live transaction: vehicle entering B2 (sid=5) ────
     await delay(1000);
-    const recId = addRecord({
-        uid: 0x11223344,
-        act: ActionType.IN,
-        sid: 5,
-        st: ProcessStatus.PROCESSING,
+    eventBus.emit('ws:history', {
+        id: 6,
+        v: 0,
+        t: MessageType.HISTORY,
+        rec: {
+            ts: Date.now(),
+            uid: 0x11223344,
+            act: ActionType.IN,
+            sid: 5,
+            st: ProcessStatus.PROCESSING,
+        },
     });
 
-    // Start progress animation
-    await delay(10);
-    animateProgress(recId, 10, 2000);
+    // Grab the auto-generated record ID for progress updates
+    const recId1 = getState('history')[0].id;
 
     // Progress updates
     await delay(1500);
-    animateProgress(recId, 40, 1000);
+    eventBus.emit('ws:progress', {
+        id: 7,
+        v: 0,
+        t: MessageType.PROGRESS,
+        rid: recId1 as unknown as number,
+        p: 40,
+    });
 
     await delay(1500);
-    animateProgress(recId, 70, 1000);
+    eventBus.emit('ws:progress', {
+        id: 8,
+        v: 0,
+        t: MessageType.PROGRESS,
+        rid: recId1 as unknown as number,
+        p: 70,
+    });
 
     await delay(1500);
-    animateProgress(recId, 90, 1000);
+    eventBus.emit('ws:progress', {
+        id: 9,
+        v: 0,
+        t: MessageType.PROGRESS,
+        rid: recId1 as unknown as number,
+        p: 90,
+    });
 
     // Complete → animate to 100% and mark SUCCESS
     await delay(1500);
-    await animateProgress(recId, 100, 1000);
-    await delay(500);
-    updateRecord(recId, { st: ProcessStatus.SUCCESS, progress: 100 });
+    eventBus.emit('ws:ack', {
+        id: 10,
+        v: 0,
+        t: MessageType.ACK,
+        rid: recId1 as unknown as number,
+        st: ProcessStatus.SUCCESS,
+    });
 
     // Update slot B2 to occupied after completion
     await delay(1500);
-    updateSlot(5, { st: SlotState.OCCUPIED, uid: 0x11223344 });
+    eventBus.emit('ws:slot_status', {
+        id: 11,
+        v: 0,
+        t: MessageType.SLOT_STATUS,
+        slots: [{ sid: 5, st: SlotState.OCCUPIED, uid: 0x11223344 }],
+    });
 
     // ─── 4. Second transaction: vehicle leaving A1 (sid=1) ───
     await delay(1000);
     // Slot starts moving
-    updateSlot(1, { st: SlotState.MOVING, uid: 0xab12cd34 });
-
-    const recId2 = addRecord({
-        uid: 0xab12cd34,
-        act: ActionType.OUT,
-        sid: 1,
-        st: ProcessStatus.PROCESSING,
+    eventBus.emit('ws:slot_status', {
+        id: 12,
+        v: 0,
+        t: MessageType.SLOT_STATUS,
+        slots: [{ sid: 1, st: SlotState.MOVING, uid: 0xab12cd34 }],
     });
 
-    await delay(10);
-    animateProgress(recId2, 15, 2000);
+    eventBus.emit('ws:history', {
+        id: 13,
+        v: 0,
+        t: MessageType.HISTORY,
+        rec: {
+            ts: Date.now(),
+            uid: 0xab12cd34,
+            act: ActionType.OUT,
+            sid: 1,
+            st: ProcessStatus.PROCESSING,
+        },
+    });
+    const recId2 = getState('history')[0].id;
 
     await delay(1500);
-    animateProgress(recId2, 50, 1000);
+    eventBus.emit('ws:progress', {
+        id: 14,
+        v: 0,
+        t: MessageType.PROGRESS,
+        rid: recId2 as unknown as number,
+        p: 50,
+    });
 
     await delay(1500);
-    animateProgress(recId2, 85, 1000);
+    eventBus.emit('ws:progress', {
+        id: 15,
+        v: 0,
+        t: MessageType.PROGRESS,
+        rid: recId2 as unknown as number,
+        p: 85,
+    });
 
     await delay(1500);
-    await animateProgress(recId2, 100, 1000);
-    await delay(500);
-    updateRecord(recId2, { st: ProcessStatus.SUCCESS, progress: 100 });
+    eventBus.emit('ws:ack', {
+        id: 16,
+        v: 0,
+        t: MessageType.ACK,
+        rid: recId2 as unknown as number,
+        st: ProcessStatus.SUCCESS,
+    });
 
     await delay(1500);
-    updateSlot(1, { st: SlotState.EMPTY, uid: null });
+    eventBus.emit('ws:slot_status', {
+        id: 17,
+        v: 0,
+        t: MessageType.SLOT_STATUS,
+        slots: [{ sid: 1, st: SlotState.EMPTY, uid: undefined }],
+    });
 }
 if (import.meta.env.DEV) {
     runMock();

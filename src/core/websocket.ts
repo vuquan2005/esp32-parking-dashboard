@@ -1,6 +1,6 @@
 import { eventBus } from './eventBus';
-import { parseMessage } from './protocol';
-import type { BaseMessage, CommandMessage, SyncRequestMessage } from '../types';
+import { parseMessage, buildSyncRequest, buildAck } from './protocol';
+import type { BaseMessage, AckMessage, CommandMessage, SyncRequestMessage } from '../types';
 import type { EventMap } from './eventBus';
 
 /**
@@ -11,6 +11,9 @@ import type { EventMap } from './eventBus';
  *
  * Each message is decoded by protocol.parseMessage() and forwarded
  * to eventBus as the corresponding typed event.
+ *
+ * Every incoming message triggers an ACK back to the server.
+ * On successful connection, a sync_req is sent automatically.
  */
 
 let socket: WebSocket | null = null;
@@ -33,11 +36,17 @@ function _open(): void {
         console.log('[WS] connected');
         reconnectDelay = 1000; // reset back-off
         eventBus.emit('ws:open');
+        // Auto-sync on connect
+        send(buildSyncRequest(0, 0));
     });
 
     socket.addEventListener('message', (event: MessageEvent) => {
         try {
             const raw = JSON.parse(event.data as string) as BaseMessage;
+
+            // Ack every incoming message
+            send(buildAck(raw.id));
+
             const parsed = parseMessage(raw);
             if (parsed) {
                 // Safe: parseMessage guarantees event name matches the data type
@@ -70,7 +79,7 @@ function _open(): void {
 /**
  * Send a typed message object to ESP32.
  */
-export function send(msg: CommandMessage | SyncRequestMessage): void {
+export function send(msg: AckMessage | CommandMessage | SyncRequestMessage): void {
     if (socket?.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify(msg));
     } else {

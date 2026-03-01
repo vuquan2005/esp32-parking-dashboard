@@ -10,7 +10,7 @@ import type {
     AckMessage,
     SyncResponseMessage,
     SlotStatusMessage,
-    BatchHistoryMessage,
+    HistoryMessage,
     ProgressMessage,
     ErrorMessage,
     Filters,
@@ -21,7 +21,7 @@ export interface EventMap {
     'ws:ack': AckMessage;
     'ws:sync_res': SyncResponseMessage;
     'ws:slot_status': SlotStatusMessage;
-    'ws:batch_history': BatchHistoryMessage;
+    'ws:history': HistoryMessage;
     'ws:progress': ProgressMessage;
     'ws:error': ErrorMessage;
     'ws:open': undefined;

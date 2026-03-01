@@ -7,7 +7,7 @@
 
 import { MessageType, CommandType } from '../types';
 import type { EventMap } from './eventBus';
-import type { BaseMessage, CommandMessage, SyncRequestMessage } from '../types';
+import type { BaseMessage, AckMessage, CommandMessage, SyncRequestMessage } from '../types';
 
 // Re-export enums for convenience
 export { MessageType, CommandType } from '../types';
@@ -19,7 +19,7 @@ const EVENT_MAP = {
     [MessageType.ACK]: 'ws:ack',
     [MessageType.SYNC_RES]: 'ws:sync_res',
     [MessageType.SLOT_STATUS]: 'ws:slot_status',
-    [MessageType.BATCH_HISTORY]: 'ws:batch_history',
+    [MessageType.HISTORY]: 'ws:history',
     [MessageType.PROGRESS]: 'ws:progress',
     [MessageType.ERROR]: 'ws:error',
 } as const satisfies Record<number, WsEventName>;
@@ -81,6 +81,13 @@ export function buildCommand(cmd: CommandType, param?: number, version = 0): Com
  */
 export function buildSyncRequest(lastTs: number, lastVer: number): SyncRequestMessage {
     return { id: nextId(), v: 0, t: MessageType.SYNC_REQ, lts: lastTs, lv: lastVer };
+}
+
+/**
+ * Build an AckMessage to confirm receipt of a message.
+ */
+export function buildAck(msgId: number): AckMessage {
+    return { id: nextId(), v: 0, t: MessageType.ACK, rid: msgId, st: 1 };
 }
 
 // ── UID formatting ───────────────────────────────────────────

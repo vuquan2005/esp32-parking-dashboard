@@ -11,7 +11,7 @@ export enum MessageType {
     SYNC_REQ = 0x02,
     SYNC_RES = 0x03,
     SLOT_STATUS = 0x10,
-    BATCH_HISTORY = 0x20,
+    HISTORY = 0x20,
     PROGRESS = 0x30,
     COMMAND = 0x50,
     ERROR = 0xff,
@@ -72,15 +72,15 @@ export interface SlotStatusMessage extends BaseMessage {
     }[];
 }
 
-export interface BatchHistoryMessage extends BaseMessage {
-    t: MessageType.BATCH_HISTORY;
-    recs: {
+export interface HistoryMessage extends BaseMessage {
+    t: MessageType.HISTORY;
+    rec: {
         ts: number;
         sid: number;
         uid: number;
         act: ActionType;
         st: ProcessStatus;
-    }[];
+    };
 }
 
 export interface ProgressMessage extends BaseMessage {
@@ -106,7 +106,7 @@ export interface SyncResponseMessage extends BaseMessage {
     rid: number;
     updates?: {
         slots?: SlotStatusMessage['slots'];
-        recs?: BatchHistoryMessage['recs'];
+        recs?: HistoryMessage['rec'][];
     };
     cv: number;
 }
@@ -119,7 +119,7 @@ export interface ErrorMessage extends BaseMessage {
 export type ParkingMessage =
     | AckMessage
     | SlotStatusMessage
-    | BatchHistoryMessage
+    | HistoryMessage
     | ProgressMessage
     | CommandMessage
     | SyncRequestMessage
